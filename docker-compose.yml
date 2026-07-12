@@ -1,0 +1,79 @@
+version: '3.8'
+
+networks:
+  jobtracker-net:
+    driver: bridge
+
+volumes:
+  jobtracker-db-data:
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jobtracker-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: jobtracker_db
+      POSTGRES_USER: monolith_user
+      POSTGRES_PASSWORD: monolith_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - jobtracker-db-data:/var/lib/postgresql/data
+    networks:
+      - jobtracker-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U monolith_user -d jobtracker_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  monolith:
+    build:
+      context: ./monolith-service
+      dockerfile: Dockerfile
+    container_name: jobtracker-monolith
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: jobtracker_db
+      DB_USER: monolith_user
+      DB_PASSWORD: monolith_pass
+
+      JWT_SECRET: local-dev-secret-key-minimum-32-chars!!
+      SPRING_PROFILES_ACTIVE: prod
+      
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-local-placeholder}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-local-placeholder}
+      GOOGLE_REDIRECT_URI: http://localhost:8080/login/oauth2/code/google
+      
+      ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - jobtracker-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 40
+
+  # Optionally add frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: jobtracker-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    networks:
+      - jobtracker-net
+    depends_on:
+      monolith:
+        condition: service_healthy

@@ -1,0 +1,27 @@
+{$DOMAIN:localhost} {
+    # Reverse proxy for API Gateway
+    handle /api/* {
+        reverse_proxy api-gateway:8080
+    }
+    
+    handle /auth/* {
+        reverse_proxy api-gateway:8080
+    }
+    
+    handle /oauth2/authorization/* {
+        reverse_proxy api-gateway:8080
+    }
+    
+    handle /login/oauth2/* {
+        reverse_proxy api-gateway:8080
+    }
+
+    handle /analytics/* {
+        reverse_proxy api-gateway:8080
+    }
+
+    # Everything else goes to the React frontend
+    handle /* {
+        reverse_proxy frontend:80
+    }
+}

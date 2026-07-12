@@ -1,0 +1,48 @@
+# ── Maven ──────────────────────────────────────────────────────────
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# ── IntelliJ IDEA ──────────────────────────────────────────────────
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# ── VS Code ────────────────────────────────────────────────────────
+.vscode/
+
+# ── Eclipse ────────────────────────────────────────────────────────
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# ── NetBeans ───────────────────────────────────────────────────────
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+build/
+
+# ── OS ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Environment / secrets ──────────────────────────────────────────
+.env
+*.env.local
+*.env.production
+
+# ── Logs ───────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Docker ─────────────────────────────────────────────────────────
+# (keep docker-compose.yml but ignore local override files)
+docker-compose.override.yml

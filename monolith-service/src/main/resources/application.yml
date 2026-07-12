@@ -1,0 +1,69 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: jobtracker-monolith
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:jobtracker_db}
+    username: ${DB_USER:monolith_user}
+    password: ${DB_PASSWORD:monolith_pass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+    show-sql: false
+    open-in-view: false
+
+  flyway:
+    enabled: false # Disabling flyway since we're using update for the monolith migration
+
+  # Only needed for Auth Service functionality if it was using Spring Security OAuth2 Client
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:8080/login/oauth2/code/google}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:default-insecure-secret-change-in-prod-minimum-32-chars}
+    access-token-expiry-seconds: ${JWT_ACCESS_EXPIRY:3600}
+    refresh-token-expiry-seconds: ${JWT_REFRESH_EXPIRY:86400}
+google:
+  oauth2:
+    client-id: ${GOOGLE_CLIENT_ID}
+    client-secret: ${GOOGLE_CLIENT_SECRET}
+    redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:8080/email/oauth2/callback}
+
+encryption:
+  key: ${ENCRYPTION_KEY:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+
+polling:
+  cron: ${POLLING_CRON:0 */5 * * * *}
+  max-results: ${POLLING_MAX_RESULTS:100}
+
+webhook:
+  timeout-ms: ${WEBHOOK_TIMEOUT_MS:5000}
+  retry-attempts: ${WEBHOOK_RETRY_ATTEMPTS:3}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
+  endpoint:
+    health:
+      show-details: when-authorized

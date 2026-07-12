@@ -1,0 +1,91 @@
+name: api-gateway CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "api-gateway/**"
+      - ".github/workflows/api-gateway.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "api-gateway/**"
+      - ".github/workflows/api-gateway.yml"
+
+jobs:
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: maven
+
+      - name: Run unit tests
+        working-directory: api-gateway
+        run: mvn -B test
+
+      - name: Publish test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports-gateway
+          path: api-gateway/target/surefire-reports/
+
+  build-and-push:
+    name: Build & Push Docker Image
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/api-gateway
+          tags: |
+            type=sha,prefix=sha-
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: api-gateway
+          file: api-gateway/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    name: Deploy to Render / Railway
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Trigger Render deploy hook
+        if: ${{ secrets.API_GATEWAY_RENDER_DEPLOY_HOOK != '' }}
+        env:
+          DEPLOY_HOOK: ${{ secrets.API_GATEWAY_RENDER_DEPLOY_HOOK }}
+        run: |
+          curl -fsS -X POST "$DEPLOY_HOOK"
+          echo "API Gateway deploy triggered."
