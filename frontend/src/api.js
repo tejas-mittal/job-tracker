@@ -33,8 +33,8 @@ export async function fetchAnalytics() {
 }
 
 export function getLoginUrl() {
-  // Use the backend URL for OAuth2 authorization
-  return `${API_BASE}/oauth2/authorization/google`;
+  // Must match SecurityConfig authorizationEndpoint baseUri "/auth/authorize"
+  return `${API_BASE}/auth/authorize/google`;
 }
 
 export async function devLogin() {
