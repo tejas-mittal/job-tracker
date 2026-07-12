@@ -1,7 +1,8 @@
 // api.js
-// Handles all communication with the api-gateway (http://localhost:8080)
+// Handles all communication with the backend API
+// Uses environment variable for production, falls back to localhost for development
 
-const API_BASE = 'http://localhost:8080';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 // Helper to get auth headers if we have a token
 function getHeaders() {
@@ -32,9 +33,8 @@ export async function fetchAnalytics() {
 }
 
 export function getLoginUrl() {
-  // Hit auth-service directly for OAuth2 because Spring Security's default endpoints
-  // don't have the /auth/ prefix mapped in the gateway.
-  return `http://localhost:8081/oauth2/authorization/google`;
+  // Use the backend URL for OAuth2 authorization
+  return `${API_BASE}/oauth2/authorization/google`;
 }
 
 export async function devLogin() {
