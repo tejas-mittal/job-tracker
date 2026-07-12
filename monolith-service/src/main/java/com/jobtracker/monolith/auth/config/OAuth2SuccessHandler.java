@@ -7,8 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
-import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -42,8 +42,11 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
-    private final AuthService  authService;
+    private final AuthService authService;
     private final ObjectMapper objectMapper;
+
+    @Value("${app.frontend-url:http://localhost:3000}")
+    private String frontendUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -61,8 +64,9 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         TokenResponse tokens = authService.loginOrRegister(googleId, email, name, pictureUrl);
 
-        // Redirect back to the Vite React frontend with the JWT
-        String frontendRedirectUrl = "http://localhost:3000/oauth2/callback?token=" + tokens.accessToken();
+        // Redirect back to the frontend with the JWT
+        String frontendRedirectUrl = frontendUrl + "/oauth2/callback?token=" + tokens.accessToken();
+        log.info("Redirecting to frontend: {}", frontendRedirectUrl);
         response.sendRedirect(frontendRedirectUrl);
     }
 }

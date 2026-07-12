@@ -67,3 +67,11 @@ management:
   endpoint:
     health:
       show-details: when-authorized
+
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:3000}
+
+logging:
+  level:
+    org.springframework.security.oauth2: DEBUG
+    org.springframework.security: DEBUG
