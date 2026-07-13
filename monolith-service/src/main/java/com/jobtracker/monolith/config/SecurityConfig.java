@@ -1,6 +1,5 @@
 package com.jobtracker.monolith.config;
 
-import com.jobtracker.monolith.auth.config.HttpCookieOAuth2AuthorizationRequestRepository;
 import com.jobtracker.monolith.auth.config.OAuth2SuccessHandler;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -28,8 +27,7 @@ public class SecurityConfig {
     @Profile("!local")
     public SecurityFilterChain prodFilterChain(
             HttpSecurity http,
-            OAuth2SuccessHandler oAuth2SuccessHandler,
-            HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository) throws Exception {
+            OAuth2SuccessHandler oAuth2SuccessHandler) throws Exception {
 
         NimbusJwtDecoder decoder = NimbusJwtDecoder
                 .withSecretKey(new SecretKeySpec(
@@ -39,15 +37,17 @@ public class SecurityConfig {
 
         return http
                 .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // IF_REQUIRED: sessions are created only for the browser-based OAuth2 flow.
+                // JWT API calls are stateless by nature (bearer token in header) and
+                // don't create or use a session, so this does not break JWT auth.
+                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**", "/actuator/health", "/login/oauth2/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .authorizationEndpoint(ep -> ep
-                                .baseUri("/auth/authorize")
-                                .authorizationRequestRepository(cookieAuthorizationRequestRepository))
+                                .baseUri("/auth/authorize"))
                         .redirectionEndpoint(ep -> ep
                                 .baseUri("/auth/callback/*"))
                         .successHandler(oAuth2SuccessHandler)
