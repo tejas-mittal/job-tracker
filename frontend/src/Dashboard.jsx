@@ -82,9 +82,15 @@ export default function Dashboard() {
         setLinkedAccounts([]);
       }
     } catch (err) {
-      console.error(err);
-      // If we hit an error (like 401), redirect to login
-      navigate('/');
+      console.error('loadData error:', err);
+      // Only redirect to login for authentication errors
+      if (err.message && (err.message.includes('401') || err.message.includes('Unauthorized') || err.message.includes('403'))) {
+        navigate('/');
+      } else {
+        // For other errors (network, CORS, etc.) show in console but don't redirect
+        // This prevents getting kicked out for temporary backend errors
+        console.warn('Non-auth error in loadData, staying on dashboard:', err.message);
+      }
     } finally {
       setLoading(false);
     }

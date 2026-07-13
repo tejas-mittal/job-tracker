@@ -20,7 +20,7 @@ export async function fetchApplications() {
   const res = await fetch(`${API_BASE}/api/applications`, {
     headers: getHeaders()
   });
-  if (!res.ok) throw new Error('Failed to fetch applications');
+  if (!res.ok) throw new Error(`Failed to fetch applications: ${res.status}`);
   return res.json();
 }
 
@@ -28,7 +28,7 @@ export async function fetchAnalytics() {
   const res = await fetch(`${API_BASE}/analytics`, {
     headers: getHeaders()
   });
-  if (!res.ok) throw new Error('Failed to fetch analytics');
+  if (!res.ok) throw new Error(`Failed to fetch analytics: ${res.status}`);
   return res.json();
 }
 
