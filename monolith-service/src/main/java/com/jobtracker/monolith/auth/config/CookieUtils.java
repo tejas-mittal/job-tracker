@@ -3,8 +3,8 @@ package com.jobtracker.monolith.auth.config;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.util.SerializationUtils;
 
+import java.io.*;
 import java.util.Base64;
 import java.util.Optional;
 
@@ -12,6 +12,9 @@ import java.util.Optional;
  * Utility methods for reading, writing, and deleting HTTP cookies.
  * Used by {@link HttpCookieOAuth2AuthorizationRequestRepository} to persist
  * the OAuth2 authorization request across the redirect to Google and back.
+ *
+ * <p>Uses plain Java serialization (ObjectOutputStream/ObjectInputStream)
+ * to avoid the deprecated Spring SerializationUtils.
  */
 public class CookieUtils {
 
@@ -50,12 +53,25 @@ public class CookieUtils {
     }
 
     public static String serialize(Object object) {
-        return Base64.getUrlEncoder().encodeToString(SerializationUtils.serialize(object));
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutputStream oos = new ObjectOutputStream(bos);
+            oos.writeObject(object);
+            oos.flush();
+            return Base64.getUrlEncoder().encodeToString(bos.toByteArray());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to serialize OAuth2 authorization request to cookie", e);
+        }
     }
 
     @SuppressWarnings("unchecked")
     public static <T> T deserialize(Cookie cookie, Class<T> cls) {
-        return (T) SerializationUtils.deserialize(
-                Base64.getUrlDecoder().decode(cookie.getValue()));
+        try {
+            byte[] bytes = Base64.getUrlDecoder().decode(cookie.getValue());
+            ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes));
+            return cls.cast(ois.readObject());
+        } catch (IOException | ClassNotFoundException e) {
+            throw new RuntimeException("Failed to deserialize OAuth2 authorization request from cookie", e);
+        }
     }
 }
