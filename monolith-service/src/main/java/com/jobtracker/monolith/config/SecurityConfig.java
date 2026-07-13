@@ -1,5 +1,6 @@
 package com.jobtracker.monolith.config;
 
+import com.jobtracker.monolith.auth.config.HttpCookieOAuth2AuthorizationRequestRepository;
 import com.jobtracker.monolith.auth.config.OAuth2SuccessHandler;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
