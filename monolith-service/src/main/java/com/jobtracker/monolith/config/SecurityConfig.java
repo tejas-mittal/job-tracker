@@ -27,7 +27,8 @@ public class SecurityConfig {
     @Profile("!local")
     public SecurityFilterChain prodFilterChain(
             HttpSecurity http,
-            OAuth2SuccessHandler oAuth2SuccessHandler) throws Exception {
+            OAuth2SuccessHandler oAuth2SuccessHandler,
+            HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository) throws Exception {
 
         NimbusJwtDecoder decoder = NimbusJwtDecoder
                 .withSecretKey(new SecretKeySpec(
@@ -43,10 +44,11 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
-                        .authorizationEndpoint(ep ->
-                                ep.baseUri("/auth/authorize"))
-                        .redirectionEndpoint(ep ->
-                                ep.baseUri("/auth/callback/*"))
+                        .authorizationEndpoint(ep -> ep
+                                .baseUri("/auth/authorize")
+                                .authorizationRequestRepository(cookieAuthorizationRequestRepository))
+                        .redirectionEndpoint(ep -> ep
+                                .baseUri("/auth/callback/*"))
                         .successHandler(oAuth2SuccessHandler)
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
