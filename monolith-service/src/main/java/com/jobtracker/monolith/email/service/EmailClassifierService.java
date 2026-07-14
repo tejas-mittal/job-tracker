@@ -54,19 +54,19 @@ public class EmailClassifierService {
         )),
 
         new StatusPattern(DetectedStatus.INTERVIEW, List.of(
-            compile("(?i)\\b(schedule an interview|invite you to (?:an )?interview|next steps in the interview|technical interview|phone screen|interview availability|your availability|schedule a call|moving forward with your application|moving to the next round|campus interview|interview invitation|internship interview|interview scheduled|screening assessment|online assessment|coding exam|coding test|hackerrank|take the assessment|complete a screening)\\b")
+            compile("(?i)\\b(schedule an interview|invite you to (?:an )?interview|next steps in the interview|technical interview|phone screen|interview availability|your availability|schedule a call|moving forward with your application|moving to the next round|campus interview|interview invitation|internship interview|interview scheduled|screening assessment|online assessment|coding exam|coding test|hackerrank|take the assessment|complete a screening|interview with|invitation to interview|assessment invitation|test link|coderbyte|mettl|profile screened for|identity verification)\\b")
         )),
 
         new StatusPattern(DetectedStatus.REJECTED, List.of(
-            compile("(?i)\\b(unfortunately, we|regret to inform|not moving forward|not be moving forward|unable to offer|position has been filled|pursue other candidates|other applicants|move forward with another candidate|unsuccessful|not selected|decided to move forward with other)\\b")
+            compile("(?i)\\b(unfortunately, we|regret to inform|not moving forward|not be moving forward|unable to offer|position has been filled|pursue other candidates|other applicants|move forward with another candidate|unsuccessful|not selected|decided to move forward with other|decided not to proceed|will not be advancing|not a fit at this time)\\b")
         )),
 
         new StatusPattern(DetectedStatus.WITHDRAWN, List.of(
-            compile("(?i)\\b(position is closed|role is closed|cancelled|withdrawn|no longer available)\\b")
+            compile("(?i)\\b(position is closed|role is closed|application withdrawn|candidacy withdrawn|application cancelled|req cancelled|job is no longer available|role is no longer available)\\b")
         )),
 
         new StatusPattern(DetectedStatus.APPLIED, List.of(
-            compile("(?i)\\b(thank you for applying|application received|application for (?:the |a )?(?:position|role|job|internship)|applied for|resume received|application has been received|thank you for your interest|congratulations.*applying)\\b")
+            compile("(?i)\\b(thank you for applying|thanks for applying|application received|application for|applied for|applied on|resume received|application has been received|thank you for your interest|congratulations.*applying|application has been submitted|application submitted|successfully applied|indeed application|creating your application|application registered|successful form registration|registered yourself for|application confirmation|received your submission|access your application|proceed with your application|refer to your application|your applications were sent)\\b")
         ))
     );
 
