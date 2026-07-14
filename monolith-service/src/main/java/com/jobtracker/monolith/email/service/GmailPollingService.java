@@ -43,7 +43,7 @@ public class GmailPollingService {
     private final GmailAccountRepository   gmailAccountRepository;
     private final ProcessedEmailRepository processedEmailRepository;
     private final GmailClientService       gmailClientService;
-    private final EmailClassifierService   classifierService;
+    private final GeminiService            geminiService;
     private final EmailEventPublisher      eventPublisher;
 
     @Value("${polling.max-results:50}")
@@ -99,152 +99,34 @@ public class GmailPollingService {
         }
 
         try {
-            Message message  = gmailClientService.fetchMessage(gmail, messageId);
-            String  subject  = gmailClientService.extractSubject(message);
-            String  body     = gmailClientService.extractBody(message);
+            Message message = gmailClientService.fetchMessage(gmail, messageId);
+            String subject = gmailClientService.extractSubject(message);
+            String body = gmailClientService.extractBody(message);
 
-            Optional<EmailClassifierService.DetectedStatus> statusOpt =
-                    classifierService.classify(subject, body);
+            Optional<GeminiService.EmailClassificationResult> resultOpt =
+                    geminiService.analyzeEmail(subject, body);
 
             String detectedStatus = null;
-            if (statusOpt.isPresent()) {
-                detectedStatus = statusOpt.get().name();
-
-                // â”€â”€ Extract company + role from subject â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                String company = extractCompany(message, subject, body);
-                String role    = extractRole(subject);
-
-                // â”€â”€ Extract interview/assessment metadata â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-                String interviewLink = null;
-                String interviewTime = null;
-                String assessmentDate = null;
-                String notes = null;
-                
-                String text = (subject + " " + body).replaceAll("[\\r\\n]+", " ");
-                String lowerText = text.toLowerCase();
-
-                boolean isAssessment = false;
-                // Smartly determine if this is an assessment vs interview ONLY if it's already an INTERVIEW
-                if ("INTERVIEW".equals(detectedStatus)) {
-                    if (lowerText.contains("assessment") || lowerText.contains("coding exam") || lowerText.contains("hackerrank") || lowerText.contains("codesignal") || lowerText.contains("test") || lowerText.contains("online round") || lowerText.contains("screening")) {
-                        isAssessment = true;
-                    }
-                }
-
-                if (!"APPLIED".equals(detectedStatus)) {
-                    
-                    // Parse assessment specific details
-                    if (isAssessment) {
-                        java.util.regex.Matcher assessMatcher = java.util.regex.Pattern.compile("(?i)(?:Deadline|Due Date|Assessment Date|Test Date)\\s*[:\\-]?\\s*(\\d{1,2}(?:st|nd|rd|th)?\\s+[A-Za-z]+\\s+\\d{4}|\\d{2}-\\d{2}-\\d{4})")
-                                .matcher(text);
-                        if (assessMatcher.find()) {
-                            assessmentDate = assessMatcher.group(1);
-                        } else {
-                            java.util.regex.Matcher fallbackAssessMatcher = java.util.regex.Pattern.compile("(?i)(?:assessment|test).*?(?:on|scheduled for|today,)\\s*(\\d{1,2}(?:st|nd|rd|th)?\\s+[A-Za-z]+\\s+\\d{4}|\\d{2}-\\d{2}-\\d{4})")
-                                    .matcher(text);
-                            if (fallbackAssessMatcher.find()) {
-                                assessmentDate = fallbackAssessMatcher.group(1);
-                            }
-                        }
-                        
-                        java.util.regex.Matcher timeMatcher = java.util.regex.Pattern.compile("(?i)(?:on|scheduled for|from)\\s+(\\d{2}-\\d{2}-\\d{4}\\s+\\d{2}:\\d{2})|\\b(\\d{1,2}:\\d{2}(?:\\s*(?:AM|PM|am|pm))?(?:\\s*(?:-|to)\\s*\\d{1,2}:\\d{2}(?:\\s*(?:AM|PM|am|pm))?)?)\\b")
-                                .matcher(text);
-                        if (timeMatcher.find()) {
-                            interviewTime = timeMatcher.group(1) != null ? timeMatcher.group(1) : timeMatcher.group(2);
-                        }
-                        
-                        java.util.regex.Matcher linkMatcher = java.util.regex.Pattern.compile("(?i)https?://(?:[a-zA-Z0-9-]+\\.)*(?:hackerrank|coderbyte|codesignal|mettl|shl|screening)[^\\s\\\"'<]*")
-                                .matcher(text);
-                        if (linkMatcher.find()) {
-                            interviewLink = linkMatcher.group(0);
-                        } else {
-                            java.util.regex.Matcher fallbackLink = java.util.regex.Pattern.compile("https?://[^\\s<>\"']+").matcher(text);
-                            while (fallbackLink.find()) {
-                                String l = fallbackLink.group();
-                                if (!l.contains("w3.org") && !l.contains("schemas.") && !l.contains("google.com/search")) {
-                                    interviewLink = l;
-                                    break;
-                                }
-                            }
-                        }
-                    } 
-                    // Parse interview specific details
-                    else if ("INTERVIEW".equals(detectedStatus)) {
-                        java.util.regex.Matcher timeMatcher = java.util.regex.Pattern.compile("(?i)(?:on|scheduled for|slot)\\s+(\\d{2}-\\d{2}-\\d{4}\\s+\\d{2}:\\d{2})|\\b(\\d{1,2}:\\d{2}(?:\\s*(?:AM|PM|am|pm))?(?:\\s*(?:-|to)\\s*\\d{1,2}:\\d{2}(?:\\s*(?:AM|PM|am|pm))?)?)\\b")
-                                .matcher(text);
-                        if (timeMatcher.find()) {
-                            interviewTime = timeMatcher.group(1) != null ? timeMatcher.group(1) : timeMatcher.group(2);
-                        }
-                        
-                        java.util.regex.Matcher linkMatcher = java.util.regex.Pattern.compile("(?i)(https?://(?:[a-zA-Z0-9-]+\\.)?(?:zoom\\.us|meet\\.google\\.com|teams\\.microsoft\\.com|webex\\.com|calendly\\.com|chime\\.aws)[^\\s>\"']+)")
-                                .matcher(text);
-                        if (linkMatcher.find()) {
-                            interviewLink = linkMatcher.group(1);
-                        } else {
-                            java.util.regex.Matcher fallbackLink = java.util.regex.Pattern.compile("https?://[^\\s<>\"']+").matcher(text);
-                            while (fallbackLink.find()) {
-                                String l = fallbackLink.group();
-                                if (!l.contains("w3.org") && !l.contains("schemas.") && !l.contains("google.com/search")) {
-                                    interviewLink = l;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    // Extract credentials
-                    String credentials = "";
-                    java.util.regex.Matcher credMatcher = java.util.regex.Pattern.compile("(?i)(?:Applicant ID|Username|Login ID)\\s*[:\\-]?\\s*([A-Za-z0-9@\\.\\-]+)\\s+(?:Password|Passcode)\\s*[:\\-]?\\s*([A-Za-z0-9\\!@#\\$%\\^&\\*\\_\\-\\+=]+)").matcher(text);
-                    if (credMatcher.find()) {
-                        credentials = " | ID: " + credMatcher.group(1) + " | Pwd: " + credMatcher.group(2);
-                    }
-
-                    // Extract a smart snippet for notes
-                    if (body != null && !body.isBlank()) {
-                        String cleanBody = body.replaceAll("<[^>]*>", " ").replaceAll("\\s+", " ").trim();
-                        cleanBody = cleanBody.replaceAll("(?i)^(?:Dear|Hi|Hello|Greetings|Hey)[^,\\n\\-]{0,50}[,\\n\\-]?\\s*", "");
-                        cleanBody = cleanBody.replaceAll("(?i)^(?:Thank you for your interest|Thank you for applying|Thanks for applying|Congratulations|We are pleased|We are excited|Hope this finds you well|We appreciate)[^.]*\\.\\s*", "");
-                        
-                        String[] sentences = cleanBody.split("(?<=[.!?])\\s+");
-                        StringBuilder smartNotes = new StringBuilder();
-                        for (String sentence : sentences) {
-                            String lower = sentence.toLowerCase();
-                            if (lower.contains("assessment") || lower.contains("interview") || 
-                                lower.contains("duration") || lower.contains("deadline") ||
-                                lower.contains("role") || lower.contains("position") ||
-                                lower.contains("password") || lower.contains("login") ||
-                                lower.contains("test") || lower.contains("exam") || lower.contains("round")) {
-                                smartNotes.append(sentence.trim()).append(" ");
-                            }
-                        }
-                        
-                        if (smartNotes.length() > 0) {
-                            notes = smartNotes.length() > 350 ? smartNotes.substring(0, 347) + "..." : smartNotes.toString().trim();
-                        } else {
-                            notes = "";
-                        }
-                        
-                        notes = (notes + credentials).trim();
-                        if (notes.isEmpty()) notes = null;
-                    }
-                } // End if (!APPLIED)
+            if (resultOpt.isPresent() && resultOpt.get().isJobRelated()) {
+                GeminiService.EmailClassificationResult result = resultOpt.get();
+                detectedStatus = result.status();
 
                 eventPublisher.publish(
                         UUID.randomUUID(),
                         account.getUserId(),
                         messageId,
-                        company,
-                        role,
+                        result.company(),
+                        result.role(),
                         detectedStatus,
                         1.0, // hardcoded confidence for now
-                        interviewLink,
-                        interviewTime,
-                        assessmentDate,
-                        notes,
+                        result.interviewLink(),
+                        result.interviewTime(),
+                        result.assessmentDate(),
+                        result.notes(),
                         account.getGmailAddress()
                 );
             } else {
-                log.debug("No status match for messageId={} subject='{}'", messageId, subject);
+                log.debug("No job-related status match for messageId={} subject='{}'", messageId, subject);
             }
 
             // â”€â”€ Record as processed (even if no match) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
