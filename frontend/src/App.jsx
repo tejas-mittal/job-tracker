@@ -8,28 +8,32 @@ function OAuth2Callback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // In our backend setup, auth-service sets a cookie, or we might pass the token in the URL params.
-    // For local dev with API gateway, if auth-service redirects here with a token, we grab it.
-    const urlParams = new URLSearchParams(window.location.search);
+    const search = window.location.search;
+    console.log('OAuth2Callback search:', search);
+    const urlParams = new URLSearchParams(search);
     const token = urlParams.get('token');
     
     if (token) {
+      console.log('Token found, saving to localStorage');
       localStorage.setItem('jwt', token);
+      navigate('/dashboard');
+    } else {
+      console.error('No token found in URL! URL was:', window.location.href);
+      // Wait 3 seconds so we can see the console error before redirecting
+      setTimeout(() => navigate('/'), 3000);
     }
-    
-    // Redirect to dashboard whether token is present or we assume cookie session is active
-    navigate('/dashboard');
   }, [navigate]);
 
-  return <div style={{ color: 'white', padding: '2rem', textAlign: 'center' }}>Authenticating...</div>;
+  return <div style={{ color: 'white', padding: '2rem', textAlign: 'center' }}>Processing login... Please check browser console if stuck.</div>;
 }
 
 // Protected route component
 function RequireAuth({ children }) {
-  // In a real app we'd check if JWT exists or session is valid. 
-  // For now, if there's no JWT and no cookie, API calls will just 401 and redirect to Login.
   const hasToken = localStorage.getItem('jwt');
-  // Optional: if (!hasToken) return <Navigate to="/" />;
+  if (!hasToken) {
+    console.warn("RequireAuth: No JWT found, redirecting to login");
+    return <Navigate to="/" replace />;
+  }
   return children;
 }
 
