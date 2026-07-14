@@ -6,7 +6,7 @@ import com.jobtracker.monolith.notification.service.WebhookService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.jobtracker.monolith.tracker.config.CurrentUserId;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -17,9 +17,9 @@ import java.util.UUID;
  * REST controller for webhook registration.
  *
  * <ul>
- *   <li>POST   /webhooks          â€” register a webhook</li>
- *   <li>GET    /webhooks          â€” list registered webhooks</li>
- *   <li>DELETE /webhooks/{id}     â€” remove a webhook</li>
+ *   <li>POST   /webhooks          — register a webhook</li>
+ *   <li>GET    /webhooks          — list registered webhooks</li>
+ *   <li>DELETE /webhooks/{id}     — remove a webhook</li>
  * </ul>
  */
 @RestController
@@ -32,20 +32,20 @@ public class WebhookController {
     @PostMapping
     public ResponseEntity<WebhookResponse> register(
             @Valid @RequestBody WebhookRequest request,
-            @AuthenticationPrincipal UUID userId) {
+            @CurrentUserId UUID userId) {
         WebhookResponse response = webhookService.register(userId, request);
         return ResponseEntity.created(URI.create("/webhooks/" + response.id())).body(response);
     }
 
     @GetMapping
-    public ResponseEntity<List<WebhookResponse>> list(@AuthenticationPrincipal UUID userId) {
+    public ResponseEntity<List<WebhookResponse>> list(@CurrentUserId UUID userId) {
         return ResponseEntity.ok(webhookService.list(userId));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UUID userId) {
+            @CurrentUserId UUID userId) {
         webhookService.delete(id, userId);
         return ResponseEntity.noContent().build();
     }

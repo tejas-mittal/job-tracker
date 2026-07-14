@@ -5,7 +5,7 @@ import com.jobtracker.monolith.email.dto.LinkGmailResponse;
 import com.jobtracker.monolith.email.service.GmailAccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.jobtracker.monolith.tracker.config.CurrentUserId;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -23,10 +23,6 @@ import java.util.UUID;
  *   <li>{@code GET  /email/accounts}         â€” list linked accounts for current user</li>
  *   <li>{@code DELETE /email/accounts/{id}}  â€” unlink a Gmail account</li>
  * </ul>
- *
- * <p>{@code @AuthenticationPrincipal} resolves to the user's UUID (set by
- * {@link com.jobtracker.monolith.email.config.JwtAuthFilter} in prod, or the local
- * X-User-Id filter in the local profile).
  */
 @RestController
 @RequestMapping("/api/email")
@@ -42,7 +38,7 @@ public class EmailController {
      */
     @GetMapping("/accounts/link")
     public ResponseEntity<LinkGmailResponse> getLinkUrl(
-            @AuthenticationPrincipal UUID userId) throws IOException {
+            @CurrentUserId UUID userId) throws IOException {
         return ResponseEntity.ok(gmailAccountService.buildAuthorizationUrl(userId));
     }
 
@@ -84,7 +80,7 @@ public class EmailController {
      * Triggers a manual sync of all linked Gmail accounts for the user.
      */
     @PostMapping("/accounts/sync")
-    public ResponseEntity<Void> syncAccounts(@AuthenticationPrincipal UUID userId) {
+    public ResponseEntity<Void> syncAccounts(@CurrentUserId UUID userId) {
         // Run a poll for all accounts synchronously so the frontend can wait
         try {
             gmailPollingService.pollAllAccounts();
@@ -98,7 +94,7 @@ public class EmailController {
      */
     @GetMapping("/accounts")
     public ResponseEntity<List<GmailAccountResponse>> listAccounts(
-            @AuthenticationPrincipal UUID userId) {
+            @CurrentUserId UUID userId) {
         return ResponseEntity.ok(gmailAccountService.listAccounts(userId));
     }
 
@@ -109,7 +105,7 @@ public class EmailController {
     @DeleteMapping("/accounts/{id}")
     public ResponseEntity<Void> unlinkAccount(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UUID userId) {
+            @CurrentUserId UUID userId) {
         gmailAccountService.unlinkAccount(id, userId);
         return ResponseEntity.noContent().build();
     }

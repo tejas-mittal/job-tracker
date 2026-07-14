@@ -4,7 +4,7 @@ import com.jobtracker.monolith.notification.dto.NotificationResponse;
 import com.jobtracker.monolith.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import com.jobtracker.monolith.tracker.config.CurrentUserId;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,25 +29,25 @@ public class NotificationController {
 
     @GetMapping
     public ResponseEntity<List<NotificationResponse>> listAll(
-            @AuthenticationPrincipal UUID userId) {
+            @CurrentUserId UUID userId) {
         return ResponseEntity.ok(notificationService.listAll(userId));
     }
 
     @GetMapping("/unread")
     public ResponseEntity<List<NotificationResponse>> listUnread(
-            @AuthenticationPrincipal UUID userId) {
+            @CurrentUserId UUID userId) {
         return ResponseEntity.ok(notificationService.listUnread(userId));
     }
 
     @PatchMapping("/{id}/read")
     public ResponseEntity<NotificationResponse> markRead(
             @PathVariable UUID id,
-            @AuthenticationPrincipal UUID userId) {
+            @CurrentUserId UUID userId) {
         return ResponseEntity.ok(notificationService.markRead(id, userId));
     }
 
     @PatchMapping("/read-all")
-    public ResponseEntity<Void> markAllRead(@AuthenticationPrincipal UUID userId) {
+    public ResponseEntity<Void> markAllRead(@CurrentUserId UUID userId) {
         notificationService.markAllRead(userId);
         return ResponseEntity.noContent().build();
     }
