@@ -25,7 +25,6 @@ import java.util.UUID;
  * </ul>
  */
 @RestController
-@RequestMapping("/api/email")
 @RequiredArgsConstructor
 public class EmailController {
 
@@ -33,10 +32,10 @@ public class EmailController {
     private final com.jobtracker.monolith.email.service.GmailPollingService gmailPollingService;
 
     /**
-     * GET /email/accounts/link
+     * GET /api/email/accounts/link
      * Returns the Google authorization URL. The client should redirect the user there.
      */
-    @GetMapping("/accounts/link")
+    @GetMapping("/api/email/accounts/link")
     public ResponseEntity<LinkGmailResponse> getLinkUrl(
             @CurrentUserId UUID userId) throws IOException {
         return ResponseEntity.ok(gmailAccountService.buildAuthorizationUrl(userId));
@@ -51,7 +50,7 @@ public class EmailController {
      * In production this is validated for CSRF; for this backend-only API
      * it is sufficient for initial implementation.
      */
-    @GetMapping("/oauth2/callback")
+    @GetMapping("/email/oauth2/callback")
     public ResponseEntity<Void> oauth2Callback(
             @RequestParam String code,
             @RequestParam String state) throws IOException {
@@ -72,14 +71,14 @@ public class EmailController {
         
         // Redirect back to the frontend dashboard
         return ResponseEntity.status(org.springframework.http.HttpStatus.FOUND)
-                .location(URI.create("http://localhost:3000/dashboard")).build();
+                .location(URI.create("https://job-tracker-frontend-58r7.onrender.com/dashboard")).build();
     }
 
     /**
-     * POST /email/accounts/sync
+     * POST /api/email/accounts/sync
      * Triggers a manual sync of all linked Gmail accounts for the user.
      */
-    @PostMapping("/accounts/sync")
+    @PostMapping("/api/email/accounts/sync")
     public ResponseEntity<Void> syncAccounts(@CurrentUserId UUID userId) {
         // Run a poll for all accounts synchronously so the frontend can wait
         try {
@@ -89,20 +88,20 @@ public class EmailController {
     }
 
     /**
-     * GET /email/accounts
+     * GET /api/email/accounts
      * Lists all Gmail accounts linked by the authenticated user.
      */
-    @GetMapping("/accounts")
+    @GetMapping("/api/email/accounts")
     public ResponseEntity<List<GmailAccountResponse>> listAccounts(
             @CurrentUserId UUID userId) {
         return ResponseEntity.ok(gmailAccountService.listAccounts(userId));
     }
 
     /**
-     * DELETE /email/accounts/{id}
+     * DELETE /api/email/accounts/{id}
      * Unlinks a Gmail account. Returns 204 on success.
      */
-    @DeleteMapping("/accounts/{id}")
+    @DeleteMapping("/api/email/accounts/{id}")
     public ResponseEntity<Void> unlinkAccount(
             @PathVariable UUID id,
             @CurrentUserId UUID userId) {
