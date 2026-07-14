@@ -9,8 +9,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import jakarta.servlet.http.HttpServletRequest;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,5 +52,16 @@ public class DebugController {
         }
 
         return result;
+    }
+
+    @GetMapping("/auth/debug-headers")
+    public Map<String, String> debugHeaders(HttpServletRequest request) {
+        Map<String, String> map = new HashMap<>();
+        Enumeration<String> headerNames = request.getHeaderNames();
+        while (headerNames != null && headerNames.hasMoreElements()) {
+            String key = headerNames.nextElement();
+            map.put(key, request.getHeader(key));
+        }
+        return map;
     }
 }
