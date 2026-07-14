@@ -12,6 +12,8 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 import org.springframework.web.server.ResponseStatusException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.UUID;
 
@@ -30,6 +32,7 @@ import java.util.UUID;
 @Component
 public class CurrentUserIdArgumentResolver implements HandlerMethodArgumentResolver {
 
+    private static final Logger logger = LoggerFactory.getLogger(CurrentUserIdArgumentResolver.class);
     private static final String USER_ID_HEADER = "X-User-Id";
 
     @Override
@@ -46,11 +49,17 @@ public class CurrentUserIdArgumentResolver implements HandlerMethodArgumentResol
 
         // â”€â”€ 1. JWT principal (production / default profile) â”€â”€â”€â”€â”€â”€â”€â”€
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        logger.info("CurrentUserIdArgumentResolver processing authentication: {}", auth != null ? auth.getClass().getName() : "null");
+        if (auth != null) {
+            logger.info("Principal class: {}", auth.getPrincipal() != null ? auth.getPrincipal().getClass().getName() : "null");
+        }
+
         if (auth != null && auth.getPrincipal() instanceof Jwt jwt) {
             String sub = jwt.getSubject();
             try {
                 return UUID.fromString(sub);
             } catch (IllegalArgumentException e) {
+                logger.error("JWT sub claim is not a valid UUID: {}", sub);
                 throw new ResponseStatusException(
                         HttpStatus.UNAUTHORIZED,
                         "JWT sub claim is not a valid UUID: " + sub);
@@ -72,6 +81,7 @@ public class CurrentUserIdArgumentResolver implements HandlerMethodArgumentResol
             }
         }
 
+        logger.error("User identity could not be resolved! Auth was: {}", auth);
         throw new ResponseStatusException(
                 HttpStatus.UNAUTHORIZED,
                 "User identity could not be resolved. " +
