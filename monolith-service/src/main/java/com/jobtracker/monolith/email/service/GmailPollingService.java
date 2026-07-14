@@ -93,7 +93,8 @@ public class GmailPollingService {
 
     private void processMessage(Gmail gmail, GmailAccount account, String messageId) {
         // â”€â”€ Idempotency check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        if (processedEmailRepository.existsByGmailAccountAndMessageId(account, messageId)) {
+        ProcessedEmail existing = processedEmailRepository.findByGmailAccountAndMessageId(account, messageId).orElse(null);
+        if (existing != null && existing.getDetectedStatus() != null) {
             log.debug("Skipping already-processed messageId={}", messageId);
             return;
         }
@@ -106,7 +107,7 @@ public class GmailPollingService {
             Optional<GeminiService.EmailClassificationResult> resultOpt =
                     geminiService.analyzeEmail(subject, body);
 
-            String detectedStatus = null;
+            String detectedStatus = "IGNORED";
             if (resultOpt.isPresent() && resultOpt.get().isJobRelated()) {
                 GeminiService.EmailClassificationResult result = resultOpt.get();
                 detectedStatus = result.status();
@@ -130,11 +131,16 @@ public class GmailPollingService {
             }
 
             // â”€â”€ Record as processed (even if no match) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-            processedEmailRepository.save(ProcessedEmail.builder()
-                    .gmailAccount(account)
-                    .messageId(messageId)
-                    .detectedStatus(detectedStatus)
-                    .build());
+            if (existing != null) {
+                existing.setDetectedStatus(detectedStatus);
+                processedEmailRepository.save(existing);
+            } else {
+                processedEmailRepository.save(ProcessedEmail.builder()
+                        .gmailAccount(account)
+                        .messageId(messageId)
+                        .detectedStatus(detectedStatus)
+                        .build());
+            }
 
         } catch (IOException e) {
             log.error("Failed to process messageId={}: {}", messageId, e.getMessage());

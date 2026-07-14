@@ -11,4 +11,6 @@ import java.util.UUID;
 public interface ProcessedEmailRepository extends JpaRepository<ProcessedEmail, UUID> {
 
     boolean existsByGmailAccountAndMessageId(GmailAccount account, String messageId);
+
+    java.util.Optional<ProcessedEmail> findByGmailAccountAndMessageId(GmailAccount account, String messageId);
 }
