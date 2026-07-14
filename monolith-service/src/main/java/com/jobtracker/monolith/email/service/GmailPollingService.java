@@ -111,7 +111,7 @@ public class GmailPollingService {
             if (resultOpt.isPresent()) {
                 if (resultOpt.get().isJobRelated()) {
                     GeminiService.EmailClassificationResult result = resultOpt.get();
-                    detectedStatus = result.status();
+                    detectedStatus = result.status() != null && !result.status().isBlank() ? result.status() : "APPLIED";
                     log.info("Gemini classified messageId={} as {}", messageId, detectedStatus);
 
                     eventPublisher.publish(

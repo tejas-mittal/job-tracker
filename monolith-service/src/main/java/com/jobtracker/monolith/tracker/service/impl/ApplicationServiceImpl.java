@@ -236,8 +236,8 @@ public class ApplicationServiceImpl implements ApplicationService {
         }
 
         UUID              userId         = event.getUserId();
-        String            company        = event.getCompany();
-        String            role           = event.getRole();
+        String            company        = event.getCompany() != null && !event.getCompany().isBlank() ? event.getCompany() : "Unknown Company";
+        String            role           = event.getRole() != null && !event.getRole().isBlank() ? event.getRole() : "Unknown Role";
         ApplicationStatus detectedStatus = null;
         try {
             detectedStatus = ApplicationStatus.valueOf(event.getDetectedStatus().toUpperCase());
