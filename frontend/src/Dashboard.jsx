@@ -60,6 +60,9 @@ export default function Dashboard() {
   const loadData = async () => {
     setLoading(true);
     try {
+      const authHeaders = await import('./api').then(m => m.fetchAuthHeaders()).catch(e => ({error: e.message}));
+      console.log('DEBUG HEADERS REACHING BACKEND:', authHeaders);
+
       const [appsData, analyticsData, accountsData] = await Promise.all([
         fetchApplications(),
         fetchAnalytics(),

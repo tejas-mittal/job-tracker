@@ -32,6 +32,13 @@ export async function fetchAnalytics() {
   return res.json();
 }
 
+export async function fetchAuthHeaders() {
+  const res = await fetch(`${API_BASE}/auth/debug-headers`, {
+    headers: getHeaders()
+  });
+  return res.json();
+}
+
 export function getLoginUrl() {
   // Must match SecurityConfig authorizationEndpoint baseUri "/auth/authorize"
   return `${API_BASE}/auth/authorize/google`;
