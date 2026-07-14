@@ -29,7 +29,7 @@ public class GeminiService {
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
-    private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=";
+    private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=";
 
     public record EmailClassificationResult(
             boolean isJobRelated,
@@ -87,7 +87,7 @@ public class GeminiService {
             String requestBodyJson = objectMapper.writeValueAsString(requestBody);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(GEMINI_API_URL + apiKey))
+                    .uri(URI.create(GEMINI_API_URL + apiKey.trim()))
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(requestBodyJson))
                     .build();
@@ -105,8 +105,13 @@ public class GeminiService {
             if (candidates.isArray() && !candidates.isEmpty()) {
                 String jsonText = candidates.get(0).path("content").path("parts").get(0).path("text").asText();
                 
-                // Sanitize markdown if Gemini returns ```json ... ```
-                jsonText = jsonText.replaceAll("(?s)^```(?:json)?\\s*(.*?)\\s*```$", "$1").trim();
+                // Robustly extract JSON object by finding the first '{' and last '}'
+                int startIndex = jsonText.indexOf('{');
+                int endIndex = jsonText.lastIndexOf('}');
+                
+                if (startIndex != -1 && endIndex != -1 && endIndex > startIndex) {
+                    jsonText = jsonText.substring(startIndex, endIndex + 1);
+                }
                 
                 EmailClassificationResult result = objectMapper.readValue(jsonText, EmailClassificationResult.class);
                 return Optional.of(result);
