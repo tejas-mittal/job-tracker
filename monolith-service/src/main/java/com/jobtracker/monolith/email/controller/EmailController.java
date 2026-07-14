@@ -80,11 +80,12 @@ public class EmailController {
      */
     @PostMapping("/api/email/accounts/sync")
     public ResponseEntity<Void> syncAccounts(@CurrentUserId UUID userId) {
-        // Run a poll for all accounts synchronously so the frontend can wait
-        try {
-            gmailPollingService.pollAllAccounts();
-        } catch (Exception e) {}
-        return ResponseEntity.ok().build();
+        Thread.startVirtualThread(() -> {
+            try {
+                gmailPollingService.pollAllAccounts();
+            } catch (Exception e) {}
+        });
+        return ResponseEntity.accepted().build();
     }
 
     /**

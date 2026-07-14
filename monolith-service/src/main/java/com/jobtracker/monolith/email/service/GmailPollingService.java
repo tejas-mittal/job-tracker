@@ -84,6 +84,13 @@ public class GmailPollingService {
 
         for (String messageId : messageIds) {
             processMessage(gmail, account, messageId);
+            try {
+                // Strictly respect Gemini's 15 RPM Free Tier Rate Limit (4 seconds per request)
+                Thread.sleep(4100); 
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
         }
 
         // Update last_polled_at
