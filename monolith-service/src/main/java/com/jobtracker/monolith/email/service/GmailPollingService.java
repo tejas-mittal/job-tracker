@@ -112,6 +112,7 @@ public class GmailPollingService {
                 if (resultOpt.get().isJobRelated()) {
                     GeminiService.EmailClassificationResult result = resultOpt.get();
                     detectedStatus = result.status();
+                    log.info("Gemini classified messageId={} as {}", messageId, detectedStatus);
 
                     eventPublisher.publish(
                             UUID.randomUUID(),
@@ -129,10 +130,10 @@ public class GmailPollingService {
                     );
                 } else {
                     detectedStatus = "IGNORED";
-                    log.debug("Gemini marked messageId={} as NOT job-related", messageId);
+                    log.info("Gemini marked messageId={} as NOT job-related", messageId);
                 }
             } else {
-                log.debug("Gemini classification failed or unavailable for messageId={}", messageId);
+                log.warn("Gemini classification failed or unavailable for messageId={}", messageId);
                 // Return early so we don't save a permanent IGNORED/null status and can retry later
                 return;
             }

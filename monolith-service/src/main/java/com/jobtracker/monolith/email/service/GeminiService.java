@@ -58,10 +58,10 @@ public class GeminiService {
             You are an expert HR Email Parser. Read the following email and extract the relevant job application details.
             Return a strictly formatted JSON object matching this schema exactly:
             {
-              "isJobRelated": boolean, // true ONLY if this email is a job application, interview invite, job rejection, offer, or application withdrawal. False for marketing, newsletters, or unrelated emails.
+              "isJobRelated": boolean, // true ONLY if this email is a job application, interview invite, job rejection, offer, or application withdrawal. This includes ANY automated email saying "Application has been submitted successfully", "Thanks for applying", "Your applications were sent", "Applied on", "Indeed Application:", "Creating Your Application Form", or "Application Confirmation". False for marketing, newsletters, or unrelated emails.
               "status": string, // MUST be one of: "APPLIED", "INTERVIEW", "REJECTED", "OFFER", "WITHDRAWN".
               "company": string, // The name of the company the user applied to (extract from sender or text. Example: "Google", "Stripe". Return null if unknown).
-              "role": string, // The job title (Example: "Software Engineer". Return null if unknown).
+              "role": string, // The job title (Example: "Software Engineer", "Clerk". Return null if unknown).
               "interviewLink": string, // If this is an interview/assessment, extract any Zoom, Google Meet, Teams, HackerRank, or other meeting/test link. (null if none).
               "interviewTime": string, // Extract the time/date of the interview. (null if none).
               "assessmentDate": string, // Extract the deadline or date for an assessment/test. (null if none).
