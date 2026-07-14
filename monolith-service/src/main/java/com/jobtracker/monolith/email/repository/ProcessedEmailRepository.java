@@ -12,5 +12,5 @@ public interface ProcessedEmailRepository extends JpaRepository<ProcessedEmail, 
 
     boolean existsByGmailAccountAndMessageId(GmailAccount account, String messageId);
 
-    java.util.Optional<ProcessedEmail> findByGmailAccountAndMessageId(GmailAccount account, String messageId);
+    java.util.Optional<ProcessedEmail> findFirstByGmailAccountAndMessageId(GmailAccount account, String messageId);
 }

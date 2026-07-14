@@ -93,7 +93,7 @@ public class GmailPollingService {
 
     private void processMessage(Gmail gmail, GmailAccount account, String messageId) {
         // â”€â”€ Idempotency check â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        ProcessedEmail existing = processedEmailRepository.findByGmailAccountAndMessageId(account, messageId).orElse(null);
+        ProcessedEmail existing = processedEmailRepository.findFirstByGmailAccountAndMessageId(account, messageId).orElse(null);
         if (existing != null && existing.getDetectedStatus() != null) {
             log.debug("Skipping already-processed messageId={}", messageId);
             return;
