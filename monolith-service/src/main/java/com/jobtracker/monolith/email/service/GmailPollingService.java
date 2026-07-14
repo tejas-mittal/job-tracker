@@ -107,27 +107,34 @@ public class GmailPollingService {
             Optional<GeminiService.EmailClassificationResult> resultOpt =
                     geminiService.analyzeEmail(subject, body);
 
-            String detectedStatus = "IGNORED";
-            if (resultOpt.isPresent() && resultOpt.get().isJobRelated()) {
-                GeminiService.EmailClassificationResult result = resultOpt.get();
-                detectedStatus = result.status();
+            String detectedStatus = null;
+            if (resultOpt.isPresent()) {
+                if (resultOpt.get().isJobRelated()) {
+                    GeminiService.EmailClassificationResult result = resultOpt.get();
+                    detectedStatus = result.status();
 
-                eventPublisher.publish(
-                        UUID.randomUUID(),
-                        account.getUserId(),
-                        messageId,
-                        result.company(),
-                        result.role(),
-                        detectedStatus,
-                        1.0, // hardcoded confidence for now
-                        result.interviewLink(),
-                        result.interviewTime(),
-                        result.assessmentDate(),
-                        result.notes(),
-                        account.getGmailAddress()
-                );
+                    eventPublisher.publish(
+                            UUID.randomUUID(),
+                            account.getUserId(),
+                            messageId,
+                            result.company(),
+                            result.role(),
+                            detectedStatus,
+                            1.0, // hardcoded confidence for now
+                            result.interviewLink(),
+                            result.interviewTime(),
+                            result.assessmentDate(),
+                            result.notes(),
+                            account.getGmailAddress()
+                    );
+                } else {
+                    detectedStatus = "IGNORED";
+                    log.debug("Gemini marked messageId={} as NOT job-related", messageId);
+                }
             } else {
-                log.debug("No job-related status match for messageId={} subject='{}'", messageId, subject);
+                log.debug("Gemini classification failed or unavailable for messageId={}", messageId);
+                // Return early so we don't save a permanent IGNORED/null status and can retry later
+                return;
             }
 
             // â”€â”€ Record as processed (even if no match) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

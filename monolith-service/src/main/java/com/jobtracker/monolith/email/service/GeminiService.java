@@ -104,6 +104,10 @@ public class GeminiService {
             var candidates = rootNode.path("candidates");
             if (candidates.isArray() && !candidates.isEmpty()) {
                 String jsonText = candidates.get(0).path("content").path("parts").get(0).path("text").asText();
+                
+                // Sanitize markdown if Gemini returns ```json ... ```
+                jsonText = jsonText.replaceAll("(?s)^```(?:json)?\\s*(.*?)\\s*```$", "$1").trim();
+                
                 EmailClassificationResult result = objectMapper.readValue(jsonText, EmailClassificationResult.class);
                 return Optional.of(result);
             }
