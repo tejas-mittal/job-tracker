@@ -60,7 +60,7 @@ public class JwtUtil {
                 .claim("email", email)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiry))
-                .signWith(signingKey)
+                .signWith(signingKey, Jwts.SIG.HS256)
                 .compact();
     }
 
