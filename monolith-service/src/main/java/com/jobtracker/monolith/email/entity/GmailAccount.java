@@ -71,4 +71,7 @@ public class GmailAccount {
     public boolean isAccessTokenExpired() {
         return tokenExpiry != null && Instant.now().isAfter(tokenExpiry.minusSeconds(60));
     }
+
+    @OneToMany(mappedBy = "gmailAccount", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<ProcessedEmail> processedEmails;
 }
