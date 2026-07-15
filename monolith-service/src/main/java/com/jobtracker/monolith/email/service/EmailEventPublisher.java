@@ -44,13 +44,14 @@ public class EmailEventPublisher {
     public void publish(UUID eventId, UUID userId, String messageId,
                          String company, String role, String detectedStatus,
                          double confidence, String interviewLink, String interviewTime,
-                         String assessmentDate, String notes, String sourceEmailAddress) {
+                         String assessmentDate, String notes, String sourceEmailAddress,
+                         Instant emailDate) {
 
         EmailStatusDetectedEvent event = EmailStatusDetectedEvent.builder()
                 .eventId(eventId)
                 .eventType("email.status_detected")
                 .userId(userId)
-                .timestamp(Instant.now())
+                .timestamp(emailDate != null ? emailDate : Instant.now())
                 .sourceEmailId(messageId)
                 .company(company)
                 .role(role)

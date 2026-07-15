@@ -312,13 +312,17 @@ public class ApplicationServiceImpl implements ApplicationService {
 
         } else {
             // â”€â”€ No match â†’ create a new auto-detected application â”€â”€â”€
+            LocalDate appliedDate = event.getTimestamp() != null
+                    ? event.getTimestamp().atZone(java.time.ZoneId.systemDefault()).toLocalDate()
+                    : LocalDate.now();
+
             Application app = Application.builder()
                     .userId(userId)
                     .company(company)
                     .role(role)
                     .status(detectedStatus)
                     .source(ApplicationSource.AUTO)
-                    .appliedDate(LocalDate.now())
+                    .appliedDate(appliedDate)
                     .lastUpdatedAt(Instant.now())
                     .isArchived(detectedStatus == ApplicationStatus.OFFER)
                     .interviewLink(event.getInterviewLink())

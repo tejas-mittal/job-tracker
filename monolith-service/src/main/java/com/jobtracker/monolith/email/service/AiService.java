@@ -43,7 +43,7 @@ public class AiService {
             String notes
     ) {}
 
-    public Optional<EmailClassificationResult> analyzeEmail(String subject, String body) {
+    public Optional<EmailClassificationResult> analyzeEmail(String subject, String body, java.time.Instant emailDate) {
         if (this.apiKey == null || this.apiKey.trim().isEmpty()) {
             log.warn("API Key is missing! (Using the 'gemini.api-key' env variable for backwards compatibility)");
             return Optional.empty();
@@ -66,7 +66,7 @@ public class AiService {
             return Optional.of(mockResult);
         }
 
-        String emailContent = "Subject: " + (subject != null ? subject : "") + "\n\nBody: " + (body != null ? body : "");
+        String emailContent = "Received Date: " + (emailDate != null ? emailDate.toString() : "") + "\nSubject: " + (subject != null ? subject : "") + "\n\nBody: " + (body != null ? body : "");
         // Truncate email content to ~4000 characters to save tokens and focus on the most important parts
         if (emailContent.length() > 4000) {
             emailContent = emailContent.substring(0, 4000);
@@ -79,11 +79,11 @@ public class AiService {
               "isJobRelated": boolean, // true ONLY if this email is a job application, interview invite, job rejection, offer, or application withdrawal. False for marketing, newsletters, or unrelated emails.
               "status": string, // MUST be one of: "APPLIED", "INTERVIEW", "REJECTED", "OFFER", "WITHDRAWN".
               "company": string, // The name of the company the user applied to (extract from sender or text. Example: "Google", "Stripe". Return null if unknown).
-              "role": string, // The job title (Example: "Software Engineer", "Clerk". Return null if unknown).
+              "role": string, // The job title being applied for (e.g., "Software Engineer", "Intern"). Infer from subject or body if possible. If completely unknown, return "Unknown Role".
               "interviewLink": string, // If this is an interview/assessment, extract any Zoom, Google Meet, Teams, HackerRank, or other meeting/test link. (null if none).
-              "interviewTime": string, // Extract the time/date of the interview. (null if none).
+              "interviewTime": string, // Extract the FULL date and time of the interview (e.g., "Oct 24, 2026 10:00 AM"). Use the Received Date as context if the email says "tomorrow" or "next Tuesday". (null if none).
               "assessmentDate": string, // Extract the deadline or date for an assessment/test. (null if none).
-              "notes": string // Any important notes like Applicant ID, Passwords for tests, or short context. Keep it under 200 chars. (null if none).
+              "notes": string // Any important notes like Applicant ID, Passwords, or short context. Keep it under 200 chars. (null if none).
             }
             
             Email Content:

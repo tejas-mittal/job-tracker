@@ -125,8 +125,12 @@ public class GmailPollingService {
             String subject = gmailClientService.extractSubject(message);
             String body = gmailClientService.extractBody(message);
 
+            java.time.Instant emailDate = message.getInternalDate() != null 
+                    ? java.time.Instant.ofEpochMilli(message.getInternalDate()) 
+                    : null;
+
             Optional<AiService.EmailClassificationResult> resultOpt =
-                    aiService.analyzeEmail(subject, body);
+                    aiService.analyzeEmail(subject, body, emailDate);
 
             String detectedStatus = null;
             if (resultOpt.isPresent()) {
@@ -147,7 +151,8 @@ public class GmailPollingService {
                             result.interviewTime(),
                             result.assessmentDate(),
                             result.notes(),
-                            account.getGmailAddress()
+                            account.getGmailAddress(),
+                            emailDate
                     );
                 } else {
                     detectedStatus = "IGNORED";
