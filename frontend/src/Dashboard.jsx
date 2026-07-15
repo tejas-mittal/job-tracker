@@ -371,7 +371,7 @@ export default function Dashboard() {
                 </div>
                   
                 {/* Notes and Actionables */}
-                {(app.interviewTime || app.assessmentDate || app.interviewLink || app.notes) && (
+                {(app.interviewTime || app.assessmentDate || app.interviewLink || app.notes || app.sourceMessageId) && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px' }}>
                     {app.interviewTime && (
                       <span style={{ color: 'var(--warning)', fontSize: '0.9rem', fontWeight: 500 }}>
@@ -385,18 +385,28 @@ export default function Dashboard() {
                     )}
                     
                     {app.notes && (
-                      <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontStyle: 'italic', borderLeft: '2px solid var(--border-color)', paddingLeft: '0.5rem', margin: '0.5rem 0' }}>
+                      <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontStyle: 'italic', borderLeft: '2px solid var(--border-color)', paddingLeft: '0.5rem', margin: '0.5rem 0', whiteSpace: 'pre-wrap' }}>
                         {app.notes}
                       </div>
                     )}
 
-                    {app.interviewLink && (
-                      <a href={app.interviewLink.startsWith('http') ? app.interviewLink : `https://${app.interviewLink}`} 
-                         target="_blank" rel="noreferrer" 
-                         style={{ display: 'inline-block', marginTop: '0.25rem', padding: '0.5rem 1rem', background: 'var(--primary-accent)', color: 'white', textDecoration: 'none', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, width: 'fit-content' }}>
-                        {(app.status === 'ASSESSMENT' || app.assessmentDate || (app.notes && app.notes.toLowerCase().includes('assessment'))) ? 'Take Assessment' : 'Join Interview'}
-                      </a>
-                    )}
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+                      {app.interviewLink && (
+                        <a href={app.interviewLink.startsWith('http') ? app.interviewLink : `https://${app.interviewLink}`} 
+                           target="_blank" rel="noreferrer" 
+                           style={{ display: 'inline-block', padding: '0.5rem 1rem', background: 'var(--primary-accent)', color: 'white', textDecoration: 'none', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600 }}>
+                          {(app.status === 'ASSESSMENT' || app.assessmentDate || (app.notes && app.notes.toLowerCase().includes('assessment'))) ? 'Take Assessment' : 'Join Interview'}
+                        </a>
+                      )}
+                      
+                      {app.sourceMessageId && (
+                        <a href={`https://mail.google.com/mail/u/0/#all/${app.sourceMessageId}`}
+                           target="_blank" rel="noreferrer"
+                           style={{ display: 'inline-block', padding: '0.5rem 1rem', background: 'transparent', color: 'var(--text-main)', border: '1px solid var(--border-color)', textDecoration: 'none', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600 }}>
+                          <Mail size={14} style={{ marginRight: '0.25rem', verticalAlign: 'text-bottom' }} /> View Email
+                        </a>
+                      )}
+                    </div>
                   </div>
                 )}
 

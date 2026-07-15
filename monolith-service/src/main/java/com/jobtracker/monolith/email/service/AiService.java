@@ -83,7 +83,7 @@ public class AiService {
               "interviewLink": string, // If this is an interview/assessment, extract any Zoom, Google Meet, Teams, HackerRank, or other meeting/test link. (null if none).
               "interviewTime": string, // Extract the FULL date and time of the interview (e.g., "Oct 24, 2026 10:00 AM"). Use the Received Date as context if the email says "tomorrow" or "next Tuesday". (null if none).
               "assessmentDate": string, // Extract the deadline or date for an assessment/test. (null if none).
-              "notes": string // Any important notes like Applicant ID, Passwords, or short context. Keep it under 200 chars. (null if none).
+              "notes": string // Extract extremely useful info: Next steps, required documents, recruiter names, passwords, or Applicant ID. Keep it under 500 chars. (null if none).
             }
             
             Email Content:

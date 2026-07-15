@@ -62,6 +62,9 @@ public class Application {
     @Column(name = "source_email_address")
     private String sourceEmailAddress;
 
+    @Column(name = "source_message_id")
+    private String sourceMessageId;
+
     @Column(name = "interview_link", length = 500)
     private String interviewLink;
 

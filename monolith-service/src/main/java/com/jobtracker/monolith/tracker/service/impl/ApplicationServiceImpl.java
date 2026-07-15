@@ -289,6 +289,9 @@ public class ApplicationServiceImpl implements ApplicationService {
             if (app.getSourceEmailAddress() == null && sourceEmail != null) {
                 app.setSourceEmailAddress(sourceEmail);
             }
+            if (event.getSourceEmailId() != null) {
+                app.setSourceMessageId(event.getSourceEmailId());
+            }
             
             if (event.getInterviewLink() != null) app.setInterviewLink(event.getInterviewLink());
             if (event.getInterviewTime() != null) app.setInterviewTime(event.getInterviewTime());
@@ -330,6 +333,7 @@ public class ApplicationServiceImpl implements ApplicationService {
                     .assessmentDate(event.getAssessmentDate())
                     .notes(event.getNotes())
                     .sourceEmailAddress(sourceEmail)
+                    .sourceMessageId(event.getSourceEmailId())
                     .build();
             Application saved = applicationRepository.save(app);
 

@@ -27,5 +27,6 @@ public record ApplicationResponse(
         String interviewTime,
         String assessmentDate,
         String sourceEmailAddress,
+        String sourceMessageId,
         Boolean isArchived
 ) {}
