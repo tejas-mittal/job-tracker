@@ -30,7 +30,7 @@ public class AiService {
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-    private static final String GROQ_MODEL = "llama-3.3-70b-versatile";
+    private static final String GROQ_MODEL = "gemma2-9b-it";
 
     public record EmailClassificationResult(
             boolean isJobRelated,
@@ -78,7 +78,7 @@ public class AiService {
             {
               "isJobRelated": boolean, // true ONLY if this email is a DIRECT job application confirmation, interview invite, job rejection, offer, or application withdrawal specifically for the user. FALSE for job recommendations, job alerts, recruiter marketing, newsletters from job boards (like LinkedIn), or promotional emails. CRITICAL: If the email contains phrases like "Thank you for applying", "we can't move forward with your application", or "status of your application", it is absolutely a direct job email and MUST be true. CRITICAL EXCLUSION: If the email is marketing, spam, or about financial products (like mutual funds, NFOs, loans, credit cards, investments), you MUST return false.
               "status": string, // MUST be one of: "APPLIED", "INTERVIEW", "REJECTED", "OFFER", "WITHDRAWN".
-              "company": string, // The name of the company the user applied to (extract from sender or text. Example: "Google", "Stripe". Return null if unknown).
+              "company": string, // The actual name of the company hiring (e.g. "EPAM India", "Google"). CRITICAL: DO NOT use unofficial or weird sender names like "thandi chaddi" as the company name! Look deep into the email body to find the REAL company name. Return "Unknown Company" if it cannot be found.
               "role": string, // The job title being applied for (e.g., "Software Engineer", "Intern"). Infer from subject or body if possible. If completely unknown, return "Unknown Role".
               "interviewLink": string, // If this is an interview/assessment, extract any Zoom, Google Meet, Teams, HackerRank, or other meeting/test link. (null if none).
               "interviewTime": string, // Extract the FULL date and time of the interview (e.g., "Oct 24, 2026 10:00 AM"). Use the Received Date as context if the email says "tomorrow" or "next Tuesday". (null if none).
