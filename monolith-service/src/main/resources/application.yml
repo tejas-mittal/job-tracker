@@ -56,7 +56,7 @@ encryption:
 
 polling:
   cron: ${POLLING_CRON:0 */5 * * * *}
-  max-results: ${POLLING_MAX_RESULTS:100}
+  max-results: ${POLLING_MAX_RESULTS:250}
 
 webhook:
   timeout-ms: ${WEBHOOK_TIMEOUT_MS:5000}

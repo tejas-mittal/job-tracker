@@ -10,6 +10,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [linking, setLinking] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [syncStartTime, setSyncStartTime] = useState(null);
   const [linkedAccounts, setLinkedAccounts] = useState([]);
   const [unlinkingId, setUnlinkingId] = useState(null);
   const [activeTab, setActiveTab] = useState('active');
@@ -47,18 +48,19 @@ export default function Dashboard() {
   const handleSync = async () => {
     try {
       setSyncing(true);
+      setSyncStartTime(Date.now());
       await syncGmail();
-      await loadData();
+      setTimeout(() => loadData(false), 2000);
     } catch (err) {
       console.error(err);
       alert('Failed to sync with Gmail.');
-    } finally {
       setSyncing(false);
+      setSyncStartTime(null);
     }
   };
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const authHeaders = await import('./api').then(m => m.fetchAuthHeaders()).catch(e => ({error: e.message}));
       console.log('DEBUG HEADERS REACHING BACKEND:', authHeaders);
@@ -102,6 +104,22 @@ export default function Dashboard() {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    let interval;
+    if (syncing) {
+      interval = setInterval(() => {
+        const now = Date.now();
+        if (syncStartTime && now - syncStartTime > 10 * 60 * 1000) {
+          setSyncing(false);
+          setSyncStartTime(null);
+        } else {
+          loadData(false);
+        }
+      }, 15000);
+    }
+    return () => clearInterval(interval);
+  }, [syncing, syncStartTime]);
 
   const handleLogout = () => {
     localStorage.removeItem('jwt');
@@ -213,6 +231,16 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
+
+        {/* Syncing Banner */}
+        {(syncing || (apps.length === 0 && linkedAccounts.length > 0)) && (
+          <div style={{ background: 'rgba(99, 102, 241, 0.1)', borderLeft: '4px solid var(--primary-accent)', padding: '1rem', marginBottom: '2rem', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <RefreshCw size={24} className="spin" color="var(--primary-accent)" />
+            <div style={{ color: 'var(--text-main)', fontSize: '0.95rem' }}>
+              <strong>Scanning inbox...</strong> Scanning recent 250 mails may take upto 10 minutes. Your dashboard will automatically update as applications are found.
+            </div>
+          </div>
+        )}
 
         {/* Linked Accounts List */}
         {linkedAccounts.length > 0 && (
