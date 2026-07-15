@@ -33,14 +33,30 @@ export default function Dashboard() {
     return `https://logo.clearbit.com/${cleanName}.com`;
   };
 
+  const [backgroundFetching, setBackgroundFetching] = useState(false);
+  const [showSuccessBanner, setShowSuccessBanner] = useState(false);
+  const [prevInitialSyncRunning, setPrevInitialSyncRunning] = useState(false);
+
+  const initialSyncRunning = linkedAccounts.length > 0 && linkedAccounts.some(acc => !acc.hasSyncCursor);
+
+  useEffect(() => {
+    if (prevInitialSyncRunning && !initialSyncRunning) {
+      // Sync just finished
+      setShowSuccessBanner(true);
+      const timer = setTimeout(() => setShowSuccessBanner(false), 10000);
+      return () => clearTimeout(timer);
+    }
+    setPrevInitialSyncRunning(initialSyncRunning);
+  }, [initialSyncRunning, prevInitialSyncRunning]);
+
   const handleLinkGmail = async () => {
     try {
       setLinking(true);
-      const res = await fetchLinkGmailUrl();
-      window.location.href = res.authorizationUrl;
+      const { url } = await fetchLinkGmailUrl();
+      window.location.href = url;
     } catch (err) {
       console.error(err);
-      alert('Failed to get Gmail linking URL.');
+      alert('Failed to get Gmail link URL.');
       setLinking(false);
     }
   };
@@ -50,21 +66,20 @@ export default function Dashboard() {
       setSyncing(true);
       setSyncStartTime(Date.now());
       await syncGmail();
-      setTimeout(() => loadData(false), 2000);
+      await loadData();
     } catch (err) {
       console.error(err);
       alert('Failed to sync with Gmail.');
+    } finally {
       setSyncing(false);
       setSyncStartTime(null);
     }
   };
 
   const loadData = async (showLoading = true) => {
-    if (showLoading) setLoading(true);
     try {
-      const authHeaders = await import('./api').then(m => m.fetchAuthHeaders()).catch(e => ({error: e.message}));
-      console.log('DEBUG HEADERS REACHING BACKEND:', authHeaders);
-
+      if (showLoading) setLoading(true);
+      else setBackgroundFetching(true);
       const [appsData, analyticsData, accountsData] = await Promise.all([
         fetchApplications(),
         fetchAnalytics(),
@@ -97,7 +112,8 @@ export default function Dashboard() {
         console.warn('Non-auth error in loadData, staying on dashboard:', err.message);
       }
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
+      else setBackgroundFetching(false);
     }
   };
 
@@ -113,18 +129,6 @@ export default function Dashboard() {
     }, 15000);
     return () => clearInterval(interval);
   }, [linkedAccounts]);
-
-  // 2) Syncing banner visual timeout
-  useEffect(() => {
-    if (syncing) {
-      const timeoutDuration = apps.length > 0 ? (60 * 1000) : (10 * 60 * 1000); // 1 min vs 10 mins
-      const timer = setTimeout(() => {
-        setSyncing(false);
-        setSyncStartTime(null);
-      }, timeoutDuration);
-      return () => clearTimeout(timer);
-    }
-  }, [syncing, apps.length]);
 
   const handleLogout = () => {
     localStorage.removeItem('jwt');
@@ -229,7 +233,7 @@ export default function Dashboard() {
               </button>
             </div>
             <button className="btn-primary" onClick={handleSync} disabled={syncing} style={{ padding: '0.5rem 1rem', background: 'var(--bg-surface-light)', border: '1px solid var(--border-color)', color: 'var(--text-main)', boxShadow: 'none' }}>
-              <RefreshCw size={16} className={syncing ? 'spin' : ''} /> {syncing ? 'Syncing...' : 'Sync'}
+              <RefreshCw size={16} className={(syncing || backgroundFetching) ? 'spin' : ''} /> {(syncing || backgroundFetching) ? 'Syncing...' : 'Sync'}
             </button>
             <button className="btn-primary" onClick={handleLogout} style={{ padding: '0.5rem 1rem', background: 'transparent', border: '1px solid var(--danger)', color: 'var(--danger)', boxShadow: 'none' }}>
               <LogOut size={16} /> Logout
@@ -237,14 +241,26 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Syncing Success Banner */}
+        {showSuccessBanner && (
+          <div style={{ background: 'rgba(34, 197, 94, 0.1)', borderLeft: '4px solid var(--success)', padding: '1rem', marginBottom: '2rem', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ color: 'var(--success)' }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            </div>
+            <div style={{ color: 'var(--text-main)', fontSize: '0.95rem' }}>
+              <strong>All past 250 emails are scanned!</strong> The initial inbox sync is completely finished.
+            </div>
+          </div>
+        )}
+
         {/* Syncing Banner */}
-        {(syncing || (apps.length === 0 && linkedAccounts.length > 0)) && (
+        {(syncing || initialSyncRunning) && (
           <div style={{ background: 'rgba(99, 102, 241, 0.1)', borderLeft: '4px solid var(--primary-accent)', padding: '1rem', marginBottom: '2rem', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <RefreshCw size={24} className="spin" color="var(--primary-accent)" />
             <div style={{ color: 'var(--text-main)', fontSize: '0.95rem' }}>
-              {apps.length === 0 ? (
+              {initialSyncRunning ? (
                 <>
-                  <strong>Scanning inbox...</strong> Scanning recent 250 mails may take upto 10 minutes. Your dashboard will automatically update as applications are found.
+                  <strong>Scanning inbox...</strong> Scanning recent 250 mails may take up to 10 minutes. Your dashboard will automatically update as applications are found.
                 </>
               ) : (
                 <>
