@@ -105,22 +105,26 @@ export default function Dashboard() {
     loadData();
   }, []);
 
+  // 1) Perpetual background polling every 15 seconds
   useEffect(() => {
-    let interval;
-    if (syncing) {
-      interval = setInterval(() => {
-        const now = Date.now();
-        const timeoutDuration = apps.length > 0 ? (60 * 1000) : (10 * 60 * 1000); // 1 min vs 10 mins
-        if (syncStartTime && now - syncStartTime > timeoutDuration) {
-          setSyncing(false);
-          setSyncStartTime(null);
-        } else {
-          loadData(false);
-        }
-      }, 15000);
-    }
+    if (linkedAccounts.length === 0) return;
+    const interval = setInterval(() => {
+      loadData(false);
+    }, 15000);
     return () => clearInterval(interval);
-  }, [syncing, syncStartTime]);
+  }, [linkedAccounts]);
+
+  // 2) Syncing banner visual timeout
+  useEffect(() => {
+    if (syncing) {
+      const timeoutDuration = apps.length > 0 ? (60 * 1000) : (10 * 60 * 1000); // 1 min vs 10 mins
+      const timer = setTimeout(() => {
+        setSyncing(false);
+        setSyncStartTime(null);
+      }, timeoutDuration);
+      return () => clearTimeout(timer);
+    }
+  }, [syncing, apps.length]);
 
   const handleLogout = () => {
     localStorage.removeItem('jwt');
