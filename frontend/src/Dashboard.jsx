@@ -356,9 +356,9 @@ export default function Dashboard() {
                       />
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      <h4 style={{ margin: 0, fontSize: '1.25rem' }}>{app.company || app.role}</h4>
+                      <h4 style={{ margin: 0, fontSize: '1.25rem' }}>{app.role && app.role !== 'Unknown Role' ? app.role : (app.company || 'Unknown Role')}</h4>
                       <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        {app.role && app.role !== 'Unknown Role' ? `${app.role} • ` : ''}Applied on {new Date(app.appliedDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {app.company && app.company !== 'Unknown Company' ? `${app.company} • ` : ''}Applied on {new Date(app.appliedDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                         {app.sourceEmailAddress && (
                           <span style={{ background: 'rgba(255,255,255,0.1)', padding: '0.15rem 0.5rem', borderRadius: '12px', fontSize: '0.75rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                             <Mail size={10} /> {app.sourceEmailAddress}
