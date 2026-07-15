@@ -43,9 +43,26 @@ public class GeminiService {
     ) {}
 
     public Optional<EmailClassificationResult> analyzeEmail(String subject, String body) {
-        if (apiKey == null || apiKey.isBlank()) {
-            log.warn("Gemini API key is not configured. Skipping ML classification.");
+        if (this.apiKey == null || this.apiKey.trim().isEmpty()) {
+            log.warn("GEMINI_API_KEY is missing!");
             return Optional.empty();
+        }
+
+        if ("MOCK".equalsIgnoreCase(this.apiKey.trim())) {
+            log.info("Using MOCK AI mode for subject: {}", subject);
+            String mockCompany = "MockCompany Inc.";
+            if (subject != null && subject.length() > 5) {
+                mockCompany = subject.substring(0, Math.min(subject.length(), 15)).replaceAll("[^a-zA-Z0-9 ]", "") + " Corp";
+            }
+            // Cycle through statuses for variety
+            String mockStatus = "APPLIED";
+            if (Math.random() > 0.6) mockStatus = "REJECTED";
+            else if (Math.random() > 0.8) mockStatus = "INTERVIEW";
+            
+            EmailClassificationResult mockResult = new EmailClassificationResult(
+                    true, mockStatus, mockCompany, "Software Engineer (Mock)", null, null, null, "Mock AI generated entry"
+            );
+            return Optional.of(mockResult);
         }
 
         String emailContent = "Subject: " + (subject != null ? subject : "") + "\n\nBody: " + (body != null ? body : "");
@@ -87,7 +104,7 @@ public class GeminiService {
             String requestBodyJson = objectMapper.writeValueAsString(requestBody);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(GEMINI_API_URL + apiKey.trim()))
+                    .uri(URI.create(GEMINI_API_URL + this.apiKey.trim()))
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(requestBodyJson))
                     .build();
