@@ -139,12 +139,17 @@ public class GmailPollingService {
                     detectedStatus = result.status() != null && !result.status().isBlank() ? result.status() : "APPLIED";
                     log.info("AiService classified messageId={} as {}", messageId, detectedStatus);
 
-                    eventPublisher.publish(
-                            UUID.randomUUID(),
-                            account.getUserId(),
-                            messageId,
-                            result.company(),
-                            result.role(),
+                            String extractedCompany = result.company();
+                            if (extractedCompany == null || extractedCompany.isBlank() || "Unknown".equalsIgnoreCase(extractedCompany) || "Unknown Company".equalsIgnoreCase(extractedCompany)) {
+                                extractedCompany = extractCompany(message, subject, body);
+                            }
+
+                            eventPublisher.publish(
+                                    UUID.randomUUID(),
+                                    account.getUserId(),
+                                    messageId,
+                                    extractedCompany,
+                                    result.role(),
                             detectedStatus,
                             1.0, // hardcoded confidence for now
                             result.interviewLink(),
