@@ -43,7 +43,7 @@ public class GmailPollingService {
     private final GmailAccountRepository   gmailAccountRepository;
     private final ProcessedEmailRepository processedEmailRepository;
     private final GmailClientService       gmailClientService;
-    private final GeminiService            geminiService;
+    private final AiService                aiService;
     private final EmailEventPublisher      eventPublisher;
 
     @Value("${polling.max-results:50}")
@@ -99,8 +99,8 @@ public class GmailPollingService {
         for (String messageId : messageIds) {
             processMessage(gmail, account, messageId);
             try {
-                // Strictly respect Gemini's 15 RPM Free Tier Rate Limit (4 seconds per request)
-                Thread.sleep(4100); 
+                // Strictly respect Groq's 30 RPM Free Tier Rate Limit (2 seconds per request)
+                Thread.sleep(2100);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 break;
@@ -125,15 +125,15 @@ public class GmailPollingService {
             String subject = gmailClientService.extractSubject(message);
             String body = gmailClientService.extractBody(message);
 
-            Optional<GeminiService.EmailClassificationResult> resultOpt =
-                    geminiService.analyzeEmail(subject, body);
+            Optional<AiService.EmailClassificationResult> resultOpt =
+                    aiService.analyzeEmail(subject, body);
 
             String detectedStatus = null;
             if (resultOpt.isPresent()) {
-                if (resultOpt.get().isJobRelated()) {
-                    GeminiService.EmailClassificationResult result = resultOpt.get();
+                AiService.EmailClassificationResult result = resultOpt.get();
+                if (result.isJobRelated()) {
                     detectedStatus = result.status() != null && !result.status().isBlank() ? result.status() : "APPLIED";
-                    log.info("Gemini classified messageId={} as {}", messageId, detectedStatus);
+                    log.info("AiService classified messageId={} as {}", messageId, detectedStatus);
 
                     eventPublisher.publish(
                             UUID.randomUUID(),
@@ -151,10 +151,10 @@ public class GmailPollingService {
                     );
                 } else {
                     detectedStatus = "IGNORED";
-                    log.info("Gemini marked messageId={} as NOT job-related", messageId);
+                    log.info("AI marked messageId={} as NOT job-related", messageId);
                 }
             } else {
-                log.warn("Gemini classification failed or unavailable for messageId={}", messageId);
+                log.warn("AI classification failed or unavailable for messageId={}", messageId);
                 // Return early so we don't save a permanent IGNORED/null status and can retry later
                 return;
             }

@@ -16,12 +16,12 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Service for communicating with the Google Gemini API to classify and extract data from emails.
+ * Service for communicating with the Groq API (Llama 3) to classify and extract data from emails.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class GeminiService {
+public class AiService {
 
     @Value("${gemini.api-key}")
     private String apiKey;
@@ -29,7 +29,8 @@ public class GeminiService {
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
-    private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=";
+    private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
+    private static final String GROQ_MODEL = "llama3-8b-8192";
 
     public record EmailClassificationResult(
             boolean isJobRelated,
@@ -44,7 +45,7 @@ public class GeminiService {
 
     public Optional<EmailClassificationResult> analyzeEmail(String subject, String body) {
         if (this.apiKey == null || this.apiKey.trim().isEmpty()) {
-            log.warn("GEMINI_API_KEY is missing!");
+            log.warn("API Key is missing! (Using the 'gemini.api-key' env variable for backwards compatibility)");
             return Optional.empty();
         }
 
@@ -75,7 +76,7 @@ public class GeminiService {
             You are an expert HR Email Parser. Read the following email and extract the relevant job application details.
             Return a strictly formatted JSON object matching this schema exactly:
             {
-              "isJobRelated": boolean, // true ONLY if this email is a job application, interview invite, job rejection, offer, or application withdrawal. This includes ANY automated email saying "Application has been submitted successfully", "Thanks for applying", "Your applications were sent", "Applied on", "Indeed Application:", "Creating Your Application Form", or "Application Confirmation". False for marketing, newsletters, or unrelated emails.
+              "isJobRelated": boolean, // true ONLY if this email is a job application, interview invite, job rejection, offer, or application withdrawal. False for marketing, newsletters, or unrelated emails.
               "status": string, // MUST be one of: "APPLIED", "INTERVIEW", "REJECTED", "OFFER", "WITHDRAWN".
               "company": string, // The name of the company the user applied to (extract from sender or text. Example: "Google", "Stripe". Return null if unknown).
               "role": string, // The job title (Example: "Software Engineer", "Clerk". Return null if unknown).
@@ -89,38 +90,38 @@ public class GeminiService {
             """ + emailContent;
 
         try {
-            // Build the Gemini API request body
+            // Build the Groq (OpenAI-compatible) API request body
             Map<String, Object> requestBody = Map.of(
-                    "contents", List.of(
-                            Map.of("parts", List.of(
-                                    Map.of("text", prompt)
-                            ))
+                    "model", GROQ_MODEL,
+                    "messages", List.of(
+                            Map.of("role", "system", "content", "You are a helpful assistant that only outputs strictly formatted JSON. Do not wrap it in markdown code blocks. Just raw JSON."),
+                            Map.of("role", "user", "content", prompt)
                     ),
-                    "generationConfig", Map.of(
-                            "responseMimeType", "application/json"
-                    )
+                    "response_format", Map.of("type", "json_object"),
+                    "temperature", 0.1
             );
 
             String requestBodyJson = objectMapper.writeValueAsString(requestBody);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(GEMINI_API_URL + this.apiKey.trim()))
+                    .uri(URI.create(GROQ_API_URL))
                     .header("Content-Type", "application/json")
+                    .header("Authorization", "Bearer " + this.apiKey.trim())
                     .POST(HttpRequest.BodyPublishers.ofString(requestBodyJson))
                     .build();
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 200) {
-                log.error("Gemini API error ({}): {}", response.statusCode(), response.body());
+                log.error("Groq API error ({}): {}", response.statusCode(), response.body());
                 return Optional.empty();
             }
 
-            // Parse the Gemini response
+            // Parse the OpenAI-compatible response
             var rootNode = objectMapper.readTree(response.body());
-            var candidates = rootNode.path("candidates");
-            if (candidates.isArray() && !candidates.isEmpty()) {
-                String jsonText = candidates.get(0).path("content").path("parts").get(0).path("text").asText();
+            var choices = rootNode.path("choices");
+            if (choices.isArray() && !choices.isEmpty()) {
+                String jsonText = choices.get(0).path("message").path("content").asText();
                 
                 // Robustly extract JSON object by finding the first '{' and last '}'
                 int startIndex = jsonText.indexOf('{');
@@ -135,7 +136,7 @@ public class GeminiService {
             }
 
         } catch (Exception e) {
-            log.error("Failed to call Gemini API", e);
+            log.error("Failed to call AI API", e);
         }
 
         return Optional.empty();
