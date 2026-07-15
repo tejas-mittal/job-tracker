@@ -31,7 +31,12 @@ public class AiService {
 
     private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
     private static final String PRIMARY_MODEL = "llama-3.3-70b-versatile";
-    private static final String FALLBACK_MODEL = "gemma2-9b-it";
+    private static final String[] FALLBACK_MODELS = {
+        "llama-3.1-8b-instant",
+        "llama-3.2-3b-preview",
+        "llama-3.2-1b-preview",
+        "mixtral-8x7b-32768" // Last resort just in case
+    };
 
     public record EmailClassificationResult(
             boolean isJobRelated,
@@ -94,10 +99,21 @@ public class AiService {
         
         if (primaryResult.isPresent()) {
             return primaryResult;
-        } else {
-            log.warn("Primary model {} failed (likely rate limited). Falling back to backup model {}...", PRIMARY_MODEL, FALLBACK_MODEL);
-            return callGroqApi(prompt, FALLBACK_MODEL);
         }
+
+        log.warn("Primary model {} failed (likely rate limited or exhausted). Iterating through fallback models...", PRIMARY_MODEL);
+        
+        for (String fallbackModel : FALLBACK_MODELS) {
+            Optional<EmailClassificationResult> fallbackResult = callGroqApi(prompt, fallbackModel);
+            if (fallbackResult.isPresent()) {
+                log.info("Successfully used fallback model {}", fallbackModel);
+                return fallbackResult;
+            }
+            log.warn("Fallback model {} also failed. Trying next...", fallbackModel);
+        }
+        
+        log.error("All AI models completely exhausted or rate-limited for this cycle.");
+        return Optional.empty();
     }
 
     private Optional<EmailClassificationResult> callGroqApi(String prompt, String model) {
