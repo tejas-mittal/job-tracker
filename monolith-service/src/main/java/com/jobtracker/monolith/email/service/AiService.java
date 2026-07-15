@@ -30,7 +30,8 @@ public class AiService {
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-    private static final String GROQ_MODEL = "gemma2-9b-it";
+    private static final String PRIMARY_MODEL = "llama-3.3-70b-versatile";
+    private static final String FALLBACK_MODEL = "gemma2-9b-it";
 
     public record EmailClassificationResult(
             boolean isJobRelated,
@@ -89,10 +90,21 @@ public class AiService {
             Email Content:
             """ + emailContent;
 
+        Optional<EmailClassificationResult> primaryResult = callGroqApi(prompt, PRIMARY_MODEL);
+        
+        if (primaryResult.isPresent()) {
+            return primaryResult;
+        } else {
+            log.warn("Primary model {} failed (likely rate limited). Falling back to backup model {}...", PRIMARY_MODEL, FALLBACK_MODEL);
+            return callGroqApi(prompt, FALLBACK_MODEL);
+        }
+    }
+
+    private Optional<EmailClassificationResult> callGroqApi(String prompt, String model) {
         try {
             // Build the Groq (OpenAI-compatible) API request body
             Map<String, Object> requestBody = Map.of(
-                    "model", GROQ_MODEL,
+                    "model", model,
                     "messages", List.of(
                             Map.of("role", "system", "content", "You are a helpful assistant that only outputs strictly formatted JSON. Do not wrap it in markdown code blocks. Just raw JSON."),
                             Map.of("role", "user", "content", prompt)
@@ -113,7 +125,7 @@ public class AiService {
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() != 200) {
-                log.error("Groq API error ({}): {}", response.statusCode(), response.body());
+                log.error("Groq API error for model {} ({}): {}", model, response.statusCode(), response.body());
                 return Optional.empty();
             }
 
@@ -136,7 +148,7 @@ public class AiService {
             }
 
         } catch (Exception e) {
-            log.error("Failed to call AI API", e);
+            log.error("Failed to call AI API using model {}", model, e);
         }
 
         return Optional.empty();
