@@ -59,6 +59,7 @@ public class ApplicationMapper {
                 app.getInterviewTime(),
                 app.getAssessmentDate(),
                 app.getSourceEmailAddress(),
+                app.getSourceMessageId(),
                 app.getIsArchived()
         );
     }
