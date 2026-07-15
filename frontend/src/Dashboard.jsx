@@ -110,7 +110,8 @@ export default function Dashboard() {
     if (syncing) {
       interval = setInterval(() => {
         const now = Date.now();
-        if (syncStartTime && now - syncStartTime > 10 * 60 * 1000) {
+        const timeoutDuration = apps.length > 0 ? (60 * 1000) : (10 * 60 * 1000); // 1 min vs 10 mins
+        if (syncStartTime && now - syncStartTime > timeoutDuration) {
           setSyncing(false);
           setSyncStartTime(null);
         } else {
@@ -237,7 +238,15 @@ export default function Dashboard() {
           <div style={{ background: 'rgba(99, 102, 241, 0.1)', borderLeft: '4px solid var(--primary-accent)', padding: '1rem', marginBottom: '2rem', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <RefreshCw size={24} className="spin" color="var(--primary-accent)" />
             <div style={{ color: 'var(--text-main)', fontSize: '0.95rem' }}>
-              <strong>Scanning inbox...</strong> Scanning recent 250 mails may take upto 10 minutes. Your dashboard will automatically update as applications are found.
+              {apps.length === 0 ? (
+                <>
+                  <strong>Scanning inbox...</strong> Scanning recent 250 mails may take upto 10 minutes. Your dashboard will automatically update as applications are found.
+                </>
+              ) : (
+                <>
+                  <strong>Syncing...</strong> Fetching the latest emails. This will take a few moments.
+                </>
+              )}
             </div>
           </div>
         )}
@@ -356,9 +365,9 @@ export default function Dashboard() {
                       />
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                      <h4 style={{ margin: 0, fontSize: '1.25rem' }}>{app.role && app.role !== 'Unknown Role' ? app.role : (app.company || 'Unknown Role')}</h4>
+                      <h4 style={{ margin: 0, fontSize: '1.25rem' }}>{app.company || app.role}</h4>
                       <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        {app.company && app.company !== 'Unknown Company' ? `${app.company} • ` : ''}Applied on {new Date(app.appliedDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        {app.role && app.role !== 'Unknown Role' ? `${app.role} • ` : ''}Applied on {new Date(app.appliedDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                         {app.sourceEmailAddress && (
                           <span style={{ background: 'rgba(255,255,255,0.1)', padding: '0.15rem 0.5rem', borderRadius: '12px', fontSize: '0.75rem', color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                             <Mail size={10} /> {app.sourceEmailAddress}
