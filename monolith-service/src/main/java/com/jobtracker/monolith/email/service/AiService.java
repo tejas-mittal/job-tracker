@@ -76,7 +76,7 @@ public class AiService {
             You are an expert HR Email Parser. Read the following email and extract the relevant job application details.
             Return a strictly formatted JSON object matching this schema exactly:
             {
-              "isJobRelated": boolean, // true ONLY if this email is a DIRECT job application confirmation, interview invite, job rejection, offer, or application withdrawal specifically for the user. FALSE for job recommendations, job alerts, recruiter marketing, newsletters from job boards (like LinkedIn Job Recommendations, Indeed, Glassdoor), or promotional emails.
+              "isJobRelated": boolean, // true ONLY if this email is a DIRECT job application confirmation, interview invite, job rejection, offer, or application withdrawal specifically for the user. FALSE for job recommendations, job alerts, recruiter marketing, newsletters from job boards (like LinkedIn Job Recommendations, Indeed, Glassdoor), or promotional emails. CRITICAL: If the email contains phrases like "Thank you for applying", "we can't move forward with your application", or "status of your application", it is absolutely a direct job email and MUST be true, regardless of the sender's name.
               "status": string, // MUST be one of: "APPLIED", "INTERVIEW", "REJECTED", "OFFER", "WITHDRAWN".
               "company": string, // The name of the company the user applied to (extract from sender or text. Example: "Google", "Stripe". Return null if unknown).
               "role": string, // The job title being applied for (e.g., "Software Engineer", "Intern"). Infer from subject or body if possible. If completely unknown, return "Unknown Role".
