@@ -391,13 +391,16 @@ export default function Dashboard() {
                     )}
 
                     <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
-                      {app.interviewLink && (
-                        <a href={app.interviewLink.startsWith('http') ? app.interviewLink : `https://${app.interviewLink}`} 
-                           target="_blank" rel="noreferrer" 
-                           style={{ display: 'inline-block', padding: '0.5rem 1rem', background: 'var(--primary-accent)', color: 'white', textDecoration: 'none', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600 }}>
-                          {(app.status === 'ASSESSMENT' || app.assessmentDate || (app.notes && app.notes.toLowerCase().includes('assessment'))) ? 'Take Assessment' : 'Join Interview'}
-                        </a>
-                      )}
+                      {(app.interviewLink || (app.notes && app.notes.match(/https?:\/\/[^\s,")]+/))) && (() => {
+                        const linkToUse = app.interviewLink || app.notes.match(/https?:\/\/[^\s,")]+/)[0];
+                        return (
+                          <a href={linkToUse.startsWith('http') ? linkToUse : `https://${linkToUse}`} 
+                             target="_blank" rel="noreferrer" 
+                             style={{ display: 'inline-block', padding: '0.5rem 1rem', background: 'var(--primary-accent)', color: 'white', textDecoration: 'none', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600 }}>
+                            {(app.status === 'ASSESSMENT' || app.assessmentDate || (app.notes && app.notes.toLowerCase().includes('assessment'))) ? 'Take Assessment' : 'Join Interview'}
+                          </a>
+                        );
+                      })()}
                       
                       {app.sourceMessageId && (
                         <a href={`https://mail.google.com/mail/u/0/#all/${app.sourceMessageId}`}
