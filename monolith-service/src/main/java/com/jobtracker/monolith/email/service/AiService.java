@@ -30,7 +30,7 @@ public class AiService {
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
     private static final String GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-    private static final String GROQ_MODEL = "llama-3.1-8b-instant";
+    private static final String GROQ_MODEL = "llama3-8b-8192";
 
     public record EmailClassificationResult(
             boolean isJobRelated,
