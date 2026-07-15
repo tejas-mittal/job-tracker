@@ -140,6 +140,32 @@ public class AiService {
 
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
+            if (response.statusCode() == 429) {
+                String bodyStr = response.body();
+                boolean shouldRetry = false;
+                double waitSeconds = 0;
+                
+                java.util.regex.Matcher mSec = java.util.regex.Pattern.compile("Please try again in ([0-9.]+)s").matcher(bodyStr);
+                java.util.regex.Matcher mMs = java.util.regex.Pattern.compile("Please try again in ([0-9.]+)ms").matcher(bodyStr);
+                
+                if (mSec.find()) {
+                    waitSeconds = Double.parseDouble(mSec.group(1));
+                    shouldRetry = true;
+                } else if (mMs.find()) {
+                    waitSeconds = Double.parseDouble(mMs.group(1)) / 1000.0;
+                    shouldRetry = true;
+                }
+                
+                if (shouldRetry && waitSeconds < 40.0) {
+                    long sleepMs = (long) (waitSeconds * 1000) + 1500; // Add 1.5s buffer
+                    log.warn("Short rate limit (TPM) on {}. Sleeping {}ms before retrying...", model, sleepMs);
+                    try { Thread.sleep(sleepMs); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+                    
+                    // Retry exactly once
+                    response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                }
+            }
+
             if (response.statusCode() != 200) {
                 log.error("Groq API error for model {} ({}): {}", model, response.statusCode(), response.body());
                 return Optional.empty();
