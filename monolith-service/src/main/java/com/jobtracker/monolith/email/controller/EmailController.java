@@ -82,7 +82,7 @@ public class EmailController {
     public ResponseEntity<Void> syncAccounts(@CurrentUserId UUID userId) {
         Thread.startVirtualThread(() -> {
             try {
-                gmailPollingService.pollAllAccounts();
+                gmailPollingService.pollAccountsForUser(userId);
             } catch (Exception e) {}
         });
         return ResponseEntity.accepted().build();

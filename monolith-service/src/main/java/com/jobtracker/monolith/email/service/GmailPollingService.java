@@ -68,6 +68,20 @@ public class GmailPollingService {
         }
     }
 
+    public void pollAccountsForUser(UUID userId) {
+        List<GmailAccount> accounts = gmailAccountRepository.findByUserId(userId);
+        log.debug("Polling {} linked Gmail account(s) for user {}", accounts.size(), userId);
+
+        for (GmailAccount account : accounts) {
+            try {
+                pollAccount(account);
+            } catch (Exception e) {
+                log.error("Polling failed for account={} userId={}: {}",
+                        account.getGmailAddress(), account.getUserId(), e.getMessage(), e);
+            }
+        }
+    }
+
     // â”€â”€ Per-account polling â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     @Transactional
