@@ -49,11 +49,19 @@ export default function Dashboard() {
     setPrevInitialSyncRunning(initialSyncRunning);
   }, [initialSyncRunning, prevInitialSyncRunning]);
 
-  const handleLinkGmail = async () => {
+    const handleLinkGmail = async () => {
     try {
       setLinking(true);
-      const { url } = await fetchLinkGmailUrl();
-      window.location.href = url;
+      const response = await fetchLinkGmailUrl();
+      
+      // 1. If backend returns a raw string
+      if (typeof response === 'string') {
+        window.location.href = response;
+      } 
+      // 2. If backend returns an object, check all possible property names
+      else if (response) {
+        window.location.href = response.url || response.authorizationUrl || response.authUrl;
+      }
     } catch (err) {
       console.error(err);
       alert('Failed to get Gmail link URL.');
